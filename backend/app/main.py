@@ -40,7 +40,7 @@ async def ask(req: AskRequest):
     retrieved = STORE.query(req.question)
     context = retrieved["context"]
     answer = generate_answer_from_context(req.question, context)
-    return {"answer": answer, "sources": retrieved["sources"]}
+    return {"answer": answer, "context": context, "sources": retrieved["sources"]}
 
 if __name__ == '__main__':
     uvicorn.run(app, host='0.0.0.0', port=8000)
