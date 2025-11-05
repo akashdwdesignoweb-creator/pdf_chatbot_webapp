@@ -19,6 +19,7 @@ QUESTION:
 {question}
 
 Answer clearly and factually using only the context but in  humanly way. Do not make up any information.
+you can greet the user if it greets you.
 Dont't say according to the provided context or anything similar.
 """
     try:
