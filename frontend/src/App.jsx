@@ -1,50 +1,98 @@
-import React, { useState } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import axios from 'axios'
 
 const App = () => {
   const [question, setQuestion] = useState('')
-  const [answer, setAnswer] = useState('')
+  const [messages, setMessages] = useState([])
   const [loading, setLoading] = useState(false)
+  const messagesEndRef = useRef(null)
 
-  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  }
+
+  useEffect(() => {
+    scrollToBottom()
+  }, [messages])
+
+  const backendUrl =  import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'
 
   const handleAsk = async () => {
     if (!question.trim()) return
     setLoading(true)
+    const userQuestion = question.trim()
+    setMessages(prev => [...prev, { type: 'user', content: userQuestion }])
+    setQuestion('')
     try {
-      const res = await axios.post(`${backendUrl}/ask`, { question })
-      setAnswer(res.data.answer)
+      const res = await axios.post(`${backendUrl}/ask`, { question: userQuestion })
+      setMessages(prev => [...prev, { type: 'bot', content: res.data.answer }])
     } catch (err) {
-      setAnswer('Error connecting to server.')
+      setMessages(prev => [...prev, { type: 'bot', content: 'Error connecting to server.' }])
     }
     setLoading(false)
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-6">
-      <div className="bg-white shadow-md rounded-2xl p-8 w-full max-w-lg">
-        <h1 className="text-2xl font-bold mb-6 text-center">📘 PDF Chatbot</h1>
-        <textarea
-          className="w-full border border-gray-300 rounded-lg p-3 focus:ring focus:ring-blue-300"
-          rows="3"
-          value={question}
-          onChange={(e) => setQuestion(e.target.value)}
-          placeholder="Ask a question about the book..."
-        />
-        <button
-          onClick={handleAsk}
-          disabled={loading}
-          className="w-full mt-4 bg-blue-600 text-white font-medium py-2 px-4 rounded-lg hover:bg-blue-700 disabled:opacity-50"
-        >
-          {loading ? 'Thinking...' : 'Ask'}
-        </button>
-        {answer && (
-          <div className="mt-6 bg-gray-50 border border-gray-200 rounded-lg p-4">
-            <strong>Answer:</strong>
-            <p className="mt-2 text-gray-800 whitespace-pre-line">{answer}</p>
+    <div className="fixed inset-0 bg-gray-50 flex flex-col font-sans">
+  <header className="flex items-center px-8 py-6 bg-gradient-to-r from-[#ef3a2e] to-[#f4772f] shadow-md">
+        <div className="bg-white p-3 rounded-full shadow">
+          <span role="img" aria-label="building" className="text-3xl">🏛️</span>
+        </div>
+        <h1 className="text-2xl font-extrabold ml-4 text-white tracking-wide drop-shadow" style={{fontFamily:'Montserrat,Arial,sans-serif'}}>UP BuildBot</h1>
+      </header>
+      <main className="flex-1 flex flex-col justify-end items-center w-full">
+        <div className="w-full max-w-3xl flex-1 flex flex-col justify-end px-4 pb-4 pt-2 mx-auto">
+          <div className="flex-1 overflow-y-auto space-y-4 pb-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+            {messages.length === 0 && (
+              <div className="flex justify-center items-center h-full text-gray-400 text-lg opacity-70">
+                Start chatting about UP Building Byelaws & Zoning Regulations!
+              </div>
+            )}
+            {messages.map((msg, index) => (
+              <div
+                key={index}
+                className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}
+              >
+                <div
+                  className={`max-w-[70%] rounded-2xl px-5 py-3 shadow text-base font-semibold transition-all ${
+                    msg.type === 'user'
+                      ? 'bg-white text-gray-900 border border-gray-300 rounded-tr-none'
+                      : 'bg-gray-100 text-gray-700 rounded-tl-none border border-gray-200'
+                  }`}
+                  style={{fontFamily:'Montserrat,Arial,sans-serif'}}
+                >
+                  {msg.content}
+                </div>
+              </div>
+            ))}
+            <div ref={messagesEndRef} />
           </div>
-        )}
-      </div>
+          <form className="flex gap-3 pt-2" onSubmit={e => {e.preventDefault(); handleAsk();}}>
+            <input
+              type="text"
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleAsk()}
+              placeholder="Ask about UP building regulations..."
+              className="flex-1 border border-gray-300 rounded-full px-5 py-3 focus:ring-2 focus:ring-primary focus:outline-none text-gray-900 bg-white shadow font-semibold"
+              style={{fontFamily:'Montserrat,Arial,sans-serif'}}
+            />
+            <button
+              type="submit"
+              disabled={loading}
+              className="bg-gradient-to-r from-[#ef3a2e] to-[#f4772f] text-white rounded-full w-14 h-14 flex items-center justify-center hover:scale-105 transition disabled:opacity-50 shadow-lg"
+            >
+              {loading ? (
+                <div className="animate-spin rounded-full h-7 w-7 border-4 border-white border-t-transparent" />
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-7 h-7">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                </svg>
+              )}
+            </button>
+          </form>
+        </div>
+      </main>
     </div>
   )
 }
